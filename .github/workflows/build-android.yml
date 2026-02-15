@@ -20,36 +20,16 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        working-directory: drip
+        working-directory: drip/apps/mobile
         run: npm install
 
-      - name: Build @drip/core
-        working-directory: drip/packages/core
-        run: npm run build
-
-      - name: Build Android with EAS
-        working-directory: drip/apps/mobile
-        env:
-          EXPO_NO_TELEMETRY: 1
-          EAS_BUILD_CONTEXT: GITHUB
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: npx eas build -p android --profile production --non-interactive
-
-      - name: Download built APK
-        if: success()
-        working-directory: drip/apps/mobile
-        env:
-          EXPO_NO_TELEMETRY: 1
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          sleep 15
-          BUILD_ID=$(npx eas build:list --platform android --status finished --limit 1 --json | jq -r '.[0].id')
-          npx eas build:download "$BUILD_ID" --output ./apk
+      - name: Build Android APK
+        working-directory: drip/apps/mobile/android
+        run: ./gradlew assembleRelease
 
       - name: Upload APK
-        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: drip/apps/mobile/apk/*.apk
+          path: drip/apps/mobile/android/app/build/outputs/apk/release/*.apk
           if-no-files-found: ignore

@@ -17,6 +17,7 @@
     "android": {
       "package": "com.anonymous.drip"
     },
+    "newArchEnabled": false,
     "extra": {
       "router": {},
       "eas": {
