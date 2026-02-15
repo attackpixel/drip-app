@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.26.0",
-    "@drip/core": "file:../packages/core",
+    "@drip/core": "workspace:*",
     "@expo/metro-runtime": "~6.1.2",
     "@supabase/supabase-js": "^2.49.1",
     "expo": "~54.0.33",

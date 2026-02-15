@@ -1,18 +1,17 @@
 {
   "name": "drip",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
-    "lint": "turbo lint",
-    "dev:web": "turbo dev --filter=@drip/web",
-    "build:web": "turbo build --filter=@drip/web"
-  },
-  "dependencies": {
-    "whatwg-fetch": "^3.6.20"
+    "lint": "turbo lint"
   },
   "devDependencies": {
     "turbo": "^2.3.0"
   },
-  "packageManager": "pnpm@9.15.0"
+  "packageManager": "npm@10.0.0"
 }
