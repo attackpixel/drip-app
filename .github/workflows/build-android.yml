@@ -50,25 +50,33 @@ jobs:
         run: pnpm build
 
       - name: Build Android with EAS
+        id: eas-build
         working-directory: drip/apps/mobile
         env:
           EXPO_NO_TELEMETRY: 1
           EAS_BUILD_CONTEXT: GITHUB
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: npx eas build -p android --profile production --non-interactive
+        run: |
+          npx eas build -p android --profile production --non-interactive
 
       - name: Download built APK
+        if: success()
         working-directory: drip/apps/mobile
         env:
           EXPO_NO_TELEMETRY: 1
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          BUILD_ID=$(npx eas build:list --platform android --status finished --limit 1 --json | jq -r '.[0].id')
-          npx eas build:download "$BUILD_ID"
+          sleep 10
+          npx eas build:list --platform android --status finished --limit 1 --json > builds.json
+          cat builds.json
+          BUILD_ID=$(cat builds.json | jq -r '.[0].id')
+          echo "Downloading build: $BUILD_ID"
+          npx eas build:download "$BUILD_ID" --output ./apk
 
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: drip/apps/mobile/*.apk
+          path: drip/apps/mobile/apk/*.apk
           if-no-files-found: ignore
