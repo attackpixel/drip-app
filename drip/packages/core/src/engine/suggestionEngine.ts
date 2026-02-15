@@ -1,8 +1,12 @@
-import type { ClothingItem, WeatherData, OutfitSlot, Occasion } from '../types';
+import type { ClothingItem, ColorOption, WeatherData, OutfitSlot, Occasion } from '../types';
 import { OCCASION_FORMALITY } from '../types/outfit';
 import { isWeatherAppropriate, weatherFitScore, needsOuterwear } from './weatherRules';
 import { recencyScore, varietyScore } from './rotationScorer';
 import { areColorsCompatible } from './colorHarmony';
+
+function getColorNames(colors: ColorOption[]): string[] {
+  return colors.map((c) => c.name.toLowerCase());
+}
 
 export interface SuggestionResult {
   items: { item: ClothingItem; slot: OutfitSlot; score: number }[];
@@ -52,7 +56,7 @@ function selectBestForSlot(
   weather: WeatherData | null,
   targetFormality: number,
   selectedColors: string[][],
-  excludeIds: Set<string>
+  excludeIds: Set<number>
 ): { item: ClothingItem; score: number } | null {
   const scored = candidates
     .filter((c) => !excludeIds.has(c.id))
@@ -64,7 +68,7 @@ function selectBestForSlot(
 
   // Prefer color-compatible items
   for (const candidate of scored) {
-    if (selectedColors.length === 0 || areColorsCompatible(candidate.item.colors, selectedColors.flat())) {
+    if (selectedColors.length === 0 || areColorsCompatible(getColorNames(candidate.item.colors), selectedColors.flat())) {
       return candidate;
     }
   }
@@ -78,7 +82,7 @@ export function generateSuggestion(
   options: SuggestionOptions = {}
 ): SuggestionResult {
   const { weather = null, occasion = null, excludeItemIds = [] } = options;
-  const excludeIds = new Set(excludeItemIds);
+  const excludeIds = new Set(excludeItemIds.map(Number));
   const reasons: string[] = [];
 
   const targetFormality = occasion ? OCCASION_FORMALITY[occasion] : 2;
@@ -111,7 +115,7 @@ export function generateSuggestion(
     const dress = selectBestForSlot(dresses, pool, weather, targetFormality, selectedColors, usedIds);
     if (dress) {
       result.push({ item: dress.item, slot: 'dress', score: dress.score });
-      selectedColors.push(dress.item.colors);
+      selectedColors.push(getColorNames(dress.item.colors));
       usedIds.add(dress.item.id);
       reasons.push('Suggested a dress for variety');
     }
@@ -120,7 +124,7 @@ export function generateSuggestion(
     const top = selectBestForSlot(tops, pool, weather, targetFormality, selectedColors, usedIds);
     if (top) {
       result.push({ item: top.item, slot: 'top', score: top.score });
-      selectedColors.push(top.item.colors);
+      selectedColors.push(getColorNames(top.item.colors));
       usedIds.add(top.item.id);
     }
 
@@ -128,7 +132,7 @@ export function generateSuggestion(
     const bottom = selectBestForSlot(bottoms, pool, weather, targetFormality, selectedColors, usedIds);
     if (bottom) {
       result.push({ item: bottom.item, slot: 'bottom', score: bottom.score });
-      selectedColors.push(bottom.item.colors);
+      selectedColors.push(getColorNames(bottom.item.colors));
       usedIds.add(bottom.item.id);
     }
   }
@@ -137,7 +141,7 @@ export function generateSuggestion(
   const shoe = selectBestForSlot(shoes, pool, weather, targetFormality, selectedColors, usedIds);
   if (shoe) {
     result.push({ item: shoe.item, slot: 'shoes', score: shoe.score });
-    selectedColors.push(shoe.item.colors);
+    selectedColors.push(getColorNames(shoe.item.colors));
     usedIds.add(shoe.item.id);
   }
 

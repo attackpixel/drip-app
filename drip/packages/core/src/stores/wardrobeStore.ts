@@ -42,7 +42,7 @@ export const useWardrobeStore = create<WardrobeState>()(
           brand: item.brand || null,
           purchase_price: item.purchase_price || null,
           image_path: item.image_path || null,
-          image_url: item.image_path || null,
+          image_url: item.image_path ?? undefined,
           warmth_level: item.warmth_level || 3,
           formality_level: item.formality_level || 2,
           weather_suitability: item.weather_suitability || [],
