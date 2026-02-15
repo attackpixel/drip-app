@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drip — Smart Wardrobe</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .spinner { border: 4px solid #e5e7eb; border-top: 4px solid #6366f1; border-radius: 50%; width: 32px; height: 32px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .hidden { display: none !important; }
+    .color-swatch { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.15s; }
+    .color-swatch:hover { transform: scale(1.15); }
+    .color-swatch.selected { border-color: #111; transform: scale(1.1); }
+    .fullscreen { position: fixed; inset: 0; z-index: 100; background: white; }
+    .scroll-hide::-webkit-scrollbar { display: none; }
+    .scroll-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+  <div id="app">
+    <!-- Loading -->
+    <div id="loading" class="flex h-screen items-center justify-center">
+      <div class="spinner"></div>
+    </div>
+
+    <!-- Login -->
+    <div id="login" class="hidden">
+      <div class="flex min-h-screen flex-col items-center justify-center p-4">
+        <div class="w-full max-w-sm">
+          <h1 class="mb-2 text-center text-4xl font-extrabold text-indigo-600">drip</h1>
+          <p class="mb-8 text-center text-gray-500">Your smart wardrobe</p>
+          <input id="email" type="email" placeholder="Email" class="mb-3 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base">
+          <input id="password" type="password" placeholder="Password" class="mb-4 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base">
+          <button onclick="app.signIn()" class="mb-3 w-full rounded-xl bg-indigo-600 py-3.5 font-semibold text-white">Sign In</button>
+          <button onclick="app.signUp()" class="w-full rounded-xl bg-gray-100 py-3.5 font-semibold text-gray-700">Sign Up</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="main" class="hidden">
+      <!-- Bottom Nav -->
+      <nav class="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur">
+        <div class="mx-auto flex max-w-4xl items-center justify-around py-2">
+          <a href="#" onclick="app.showPage('home')" class="nav-btn flex flex-col items-center text-xs text-gray-400" data-page="home">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+            <span class="mt-1">Home</span>
+          </a>
+          <a href="#" onclick="app.showPage('wardrobe')" class="nav-btn flex flex-col items-center text-xs text-gray-400" data-page="wardrobe">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+            <span class="mt-1">Wardrobe</span>
+          </a>
+          <a href="#" onclick="app.showPage('add')" class="nav-btn flex flex-col items-center text-xs text-gray-400" data-page="add">
+            <div class="rounded-full bg-indigo-600 p-2 text-white"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg></div>
+          </a>
+          <a href="#" onclick="app.showPage('outfit')" class="nav-btn flex flex-col items-center text-xs text-gray-400" data-page="outfit">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path></svg>
+            <span class="mt-1">Outfit</span>
+          </a>
+          <a href="#" onclick="app.showPage('stats')" class="nav-btn flex flex-col items-center text-xs text-gray-400" data-page="stats">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+            <span class="mt-1">Stats</span>
+          </a>
+        </div>
+      </nav>
+
+      <!-- Pages Container -->
+      <main class="mx-auto max-w-4xl px-4 pb-24 pt-4">
+        
+        <!-- Home -->
+        <div id="page-home" class="page">
+          <div class="mb-6 flex items-center justify-between">
+            <div>
+              <h1 class="text-2xl font-bold">Hey there</h1>
+              -sm text-gray-500" id="<p class="textweather-display">Loading weather...</p>
+            </div>
+            <div class="text-right">
+              <p class="text-sm text-gray-500" id="date-display"></p>
+            </div>
+          </div>
+
+          <div class="mb-6 rounded-2xl border border-gray-200 bg-white p-5">
+            <div class="mb-4 flex items-center justify-between">
+              <h2 class="text-lg font-semibold">Today's Outfit</h2>
+              <button onclick="app.generateOutfit()" class="rounded-lg bg-indigo-100 px-3 py-1 text-sm text-indigo-600">Regenerate</button>
+            </div>
+            <div id="outfit-display" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+            <div id="outfit-empty" class="hidden py-8 text-center text-gray-500">
+              Add clothes to get outfit suggestions!
+            </div>
+            <div class="mt-4 flex gap-2">
+              <button onclick="app.wearOutfit()" class="flex-1 rounded-xl bg-indigo-600 py-2.5 font-semibold text-white">Wear This</button>
+              <button onclick="app.saveOutfit()" class="rounded-xl bg-gray-100 px-4 py-2.5 font-medium text-gray-700">Save</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="app.showPage('add')" class="rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 py-4 font-semibold text-white">+ Add Clothes</button>
+            <button onclick="app.showPage('outfit')" class="rounded-xl bg-gray-100 py-4 font-semibold text-gray-700">Build Outfit</button>
+          </div>
+
+          <div class="mt-6">
+            <h3 class="mb-3 font-semibold">Recent Activity</h3>
+            <div id="recent-activity" class="space-y-2"></div>
+          </div>
+        </div>
+
+        <!-- Wardrobe -->
+        <div id="page-wardrobe" class="page hidden">
+          <div class="mb-4 flex items-center justify-between">
+            <h1 class="text-2xl font-bold">Wardrobe</h1>
+            <button onclick="app.showPage('add')" class="rounded-xl bg-indigo-600 px-4 py-2 font-semibold text-white">+ Add</button>
+          </div>
+
+          <div class="mb-4 flex gap-2 overflow-x-auto scroll-hide pb-2">
+            <button onclick="app.filterCategory('all')" class="category-btn rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white" data-cat="all">All</button>
+            <button onclick="app.filterCategory('tops')" class="category-btn rounded-full bg-gray-100 px-4 py-2 text-sm font-medium text-gray-600" data-cat="tops">Tops</button>
+            <button onclick="app.filterCategory('jersey')" class="category-btn rounded-full bg-gray-100 px-4 py-2 text-sm font-medium text-gray-600" data-cat="jersey">Jersey</button>
+            <button onclick="app.filterCategory('shorts')" class="category-btn rounded-full bg-gray-100 px-4 py-2 text-sm font-medium text-gray-600" data-cat="shorts">Shorts</button>
+            <button onclick="app.filterCategory('bottoms')" class="category-btn rounded-full bg-gray-100 px-4 py-2 text-sm font-medium text-gray-600" data-cat="bottoms">Bottoms</button>
+            <button onclick="app.filterCategory('knitwear')" class="category-btn rounded-full bg-gray-100 px-4 py-2 text-sm font-medium text-gray-600" data-cat="knitwear">Knitwear</button>
+            <button onclick="app.filterCategory('jumper')" class="category-btn rounded-full bg-gray-100 px-4 py-2 text-sm font-medium text-gray-600" data-cat="jumper">Jumper</button>
+            <button onclick="app.filterCategory('outerwear')" class="category-btn rounded-full bg-gray-100 px-4 py-2 text-sm font-medium text-gray-600" data-cat="outerwear">Outerwear</button>
+            <button onclick="app.filterCategory('puffer')" class="category-btn rounded-full bg-gray-100 px-4 py-2 text-sm font-medium text-gray-600" data-cat="puffer">Puffer</button>
+            <button onclick="app.filterCategory('shoes')" class="category-btn rounded-full bg-gray-100 px-4 py-2 text-sm font-medium text-gray-600" data-cat="shoes">Shoes</button>
+            <button onclick="app.filterCategory('accessories')" class="category-btn rounded-full bg-gray-100 px-4 py-2 text-sm font-medium text-gray-600" data-cat="accessories">Accessories</button>
+            <button onclick="app.filterCategory('belts')" class="category-btn rounded-full bg-gray-100 px-4 py-2 text-sm font-medium text-gray-600" data-cat="belts">Belts</button>
+            <button onclick="app.showCategoryModal()" class="rounded-full border border-dashed border-gray-400 px-4 py-2 text-sm font-medium text-gray-500">+ Custom</button>
+          </div>
+
+          <div id="wardrobe-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+          <div id="wardrobe-empty" class="hidden py-16 text-center text-gray-500">No items yet. Add some clothes!</div>
+        </div>
+
+        <!-- Add Item -->
+        <div id="page-add" class="page hidden">
+          <h1 class="mb-6 text-2xl font-bold">Add Item</h1>
+
+          <div class="space-y-4">
+            <!-- Photo -->
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700">Photo</label>
+              <div class="grid grid-cols-2 gap-2">
+                <div onclick="document.getElementById('photo-file').click()" class="flex h-32 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 hover:border-indigo-400 bg-gray-50">
+                  <svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                  <span class="mt-1 text-xs text-gray-500">Upload</span>
+                </div>
+                <input type="file" id="photo-file" accept="image/*" class="hidden" onchange="app.handlePhotoFile(this)">
+                <div onclick="app.showImageUrlModal()" class="flex h-32 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 hover:border-indigo-400 bg-gray-50">
+                  <svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                  <span class="mt-1 text-xs text-gray-500">Image URL</span>
+                </div>
+              </div>
+              <input type="text" id="purchase-link" placeholder="Or paste purchase URL..." class="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm">
+            </div>
+
+            <!-- Preview -->
+            <div id="photo-preview" class="hidden">
+              <img id="preview-img" class="mx-auto max-h-48 rounded-xl object-contain">
+              <button onclick="app.clearPhoto()" class="mt-2 text-sm text-red-600">Remove photo</button>
+            </div>
+
+            <!-- Name -->
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700">Name *</label>
+              <input id="item-name" type="text" placeholder="e.g. Blue Oxford Shirt" class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base">
+            </div>
+
+            <!-- Category -->
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700">Category</label>
+              <div class="flex flex-wrap gap-2">
+                <button onclick="app.setCategory('tops')" class="cat-btn rounded-full bg-indigo-600 px-4 py-2 text-sm text-white" data-cat="tops">Tops</button>
+                <button onclick="app.setCategory('jersey')" class="cat-btn rounded-full bg-gray-100 px-4 py-2 text-sm text-gray-600" data-cat="jersey">Jersey</button>
+                <button onclick="app.setCategory('shorts')" class="cat-btn rounded-full bg-gray-100 px-4 py-2 text-sm text-gray-600" data-cat="shorts">Shorts</button>
+                <button onclick="app.setCategory('trousers')" class="cat-btn rounded-full bg-gray-100 px-4 py-2 text-sm text-gray-600" data-cat="trousers">Trousers</button>
+                <button onclick="app.setCategory('bottoms')" class="cat-btn rounded-full bg-gray-100 px-4 py-2 text-sm text-gray-600" data-cat="bottoms">Bottoms</button>
+                <button onclick="app.setCategory('knitwear')" class="cat-btn rounded-full bg-gray-100 px-4 py-2 text-sm text-gray-600" data-cat="knitwear">Knitwear</button>
+                <button onclick="app.setCategory('jumper')" class="cat-btn rounded-full bg-gray-100 px-4 py-2 text-sm text-gray-600" data-cat="jumper">Jumper</button>
+                <button onclick="app.setCategory('outerwear')" class="cat-btn rounded-full bg-gray-100 px-4 py-2 text-sm text-gray-600" data-cat="outerwear">Outerwear</button>
+                <button onclick="app.setCategory('puffer')" class="cat-btn rounded-full bg-gray-100 px-4 py-2 text-sm text-gray-600" data-cat="puffer">Puffer</button>
+                <button onclick="app.setCategory('shoes')" class="cat-btn rounded-full bg-gray-100 px-4 py-2 text-sm text-gray-600" data-cat="shoes">Shoes</button>
+                <button onclick="app.setCategory('accessories')" class="cat-btn rounded-full bg-gray-100 px-4 py-2 text-sm text-gray-600" data-cat="accessories">Accessories</button>
+                <button onclick="app.setCategory('belts')" class="cat-btn rounded-full bg-gray-100 px-4 py-2 text-sm text-gray-600" data-cat="belts">Belts</button>
+                <button onclick="app.showCategoryModal()" class="rounded-full border border-dashed border-gray-400 px-4 py-2 text-sm text-gray-500">+ Custom</button>
+              </div>
+            </div>
+
+            <!-- Brand & Price -->
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="mb-2 block text-sm font-medium text-gray-700">Brand</label>
+                <input id="item-brand" type="text" placeholder="Optional" class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2 text-base">
+              </div>
+              <div>
+                <label class="mb-2 block text-sm font-medium text-gray-700">Price</label>
+                <input id="item-price" type="number" placeholder="£" class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2 text-base">
+              </div>
+            </div>
+
+            <!-- Colors -->
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700">Colors</label>
+              <div id="color-picker" class="flex flex-wrap gap-2"></div>
+              <div id="selected-colors" class="mt-2 flex flex-wrap gap-2"></div>
+            </div>
+
+            <!-- Warmth -->
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700">Warmth Level</label>
+              <div class="flex gap-1">
+                <button onclick="app.setWarmth(1)" class="warmth-btn flex-1 h-10 rounded-lg bg-gray-200" data-level="1"></button>
+                <button onclick="app.setWarmth(2)" class="warmth-btn flex-1 h-10 rounded-lg bg-gray-200" data-level="2"></button>
+                <button onclick="app.setWarmth(3)" class="warmth-btn flex-1 h-10 rounded-lg bg-indigo-600" data-level="3"></button>
+                <button onclick="app.setWarmth(4)" class="warmth-btn flex-1 h-10 rounded-lg bg-gray-200" data-level="4"></button>
+                <button onclick="app.setWarmth(5)" class="warmth-btn flex-1 h-10 rounded-lg bg-gray-200" data-level="5"></button>
+              </div>
+              <div class="mt-1 flex justify-between text-xs text-gray-500">
+                <span>Light</span><span>Medium</span><span>Warm</span>
+              </div>
+            </div>
+
+            <!-- Formality -->
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700">Formality</label>
+              <div class="flex gap-1">
+                <button onclick="app.setFormality(1)" class="formality-btn flex-1 h-10 rounded-lg bg-gray-200" data-level="1"></button>
+                <button onclick="app.setFormality(2)" class="formality-btn flex-1 h-10 rounded-lg bg-indigo-600" data-level="2"></button>
+                <button onclick="app.setFormality(3)" class="formality-btn flex-1 h-10 rounded-lg bg-gray-200" data-level="3"></button>
+                <button onclick="app.setFormality(4)" class="formality-btn flex-1 h-10 rounded-lg bg-gray-200" data-level="4"></button>
+                <button onclick="app.setFormality(5)" class="formality-btn flex-1 h-10 rounded-lg bg-gray-200" data-level="5"></button>
+              </div>
+              <div class="mt-1 flex justify-between text-xs text-gray-500">
+                <span>Casual</span><span>Smart</span><span>Formal</span>
+              </div>
+            </div>
+
+            <!-- Seasons -->
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700">Seasons</label>
+              <div class="flex flex-wrap gap-2">
+                <button onclick="app.toggleSeason('spring')" class="season-btn rounded-full bg-gray-100 px-4 py-2 text-sm" data-season="spring">Spring</button>
+                <button onclick="app.toggleSeason('summer')" class="season-btn rounded-full bg-gray-100 px-4 py-2 text-sm" data-season="summer">Summer</button>
+                <button onclick="app.toggleSeason('fall')" class="season-btn rounded-full bg-gray-100 px-4 py-2 text-sm" data-season="fall">Fall</button>
+                <button onclick="app.toggleSeason('winter')" class="season-btn rounded-full bg-gray-100 px-4 py-2 text-sm" data-season="winter">Winter</button>
+              </div>
+            </div>
+
+            <!-- Weather -->
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700">Weather Suitability</label>
+              <div class="flex flex-wrap gap-2">
+                <button onclick="app.toggleWeather('sunny')" class="weather-btn rounded-full bg-gray-100 px-3 py-1.5 text-sm" data-weather="sunny">☀️ Sunny</button>
+                <button onclick="app.toggleWeather('cloudy')" class="weather-btn rounded-full bg-gray-100 px-3 py-1.5 text-sm" data-weather="cloudy">☁️ Cloudy</button>
+                <button onclick="app.toggleWeather('rainy')" class="weather-btn rounded-full bg-gray-100 px-3 py-1.5 text-sm" data-weather="rainy">🌧️ Rainy</button>
+                <button onclick="app.toggleWeather('snowy')" class="weather-btn rounded-full bg-gray-100 px-3 py-1.5 text-sm" data-weather="snowy">❄️ Snowy</button>
+                <button onclick="app.toggleWeather('windy')" class="weather-btn rounded-full bg-gray-100 px-3 py-1.5 text-sm" data-weather="windy">💨 Windy</button>
+                <button onclick="app.toggleWeather('hot')" class="weather-btn rounded-full bg-gray-100 px-3 py-1.5 text-sm" data-weather="hot">🔥 Hot</button>
+                <button onclick="app.toggleWeather('cold')" class="weather-btn rounded-full bg-gray-100 px-3 py-1.5 text-sm" data-weather="cold">🥶 Cold</button>
+              </div>
+            </div>
+
+            <button onclick="app.saveItem()" class="w-full rounded-xl bg-indigo-600 py-4 font-semibold text-white">Add to Wardrobe</button>
+          </div>
+        </div>
+
+        <!-- Outfit Builder -->
+        <div id="page-outfit" class="page hidden">
+          <h1 class="mb-6 text-2xl font-bold">Build Outfit</h1>
+          
+          <div class="mb-4 rounded-xl bg-indigo-50 p-4">
+            <label class="mb-2 block text-sm font-medium text-indigo-800">Weather-based suggestion</label>
+            <select id="weather-select" onchange="app.generateOutfit()" class="w-full rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm">
+              <option value="">Auto-detect / Any weather</option>
+              <option value="sunny">☀️ Sunny</option>
+              <option value="cloudy">☁️ Cloudy</option>
+              <option value="rainy">🌧️ Rainy</option>
+              <option value="snowy">❄️ Snowy</option>
+              <option value="cold">🥶 Cold</option>
+              <option value="hot">🔥 Hot</option>
+            </select>
+          </div>
+
+          <div class="mb-4">
+            <label class="mb-2 block text-sm font-medium text-gray-700">Color matching</label>
+            <div class="flex gap-2">
+              <button onclick="app.setColorMode('complementary')" class="color-mode-btn rounded-lg bg-indigo-600 px-3 py-2 text-sm text-white" data-mode="complementary">Complementary</button>
+              <button onclick="app.setColorMode('analogous')" class="color-mode-btn rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-600" data-mode="analogous">Analogous</button>
+              <button onclick="app.setColorMode('triadic')" class="color-mode-btn rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-600" data-mode="triadic">Triadic</button>
+            </div>
+          </div>
+
+          <div id="outfit-builder" class="space-y-4"></div>
+
+          <button onclick="app.saveOutfit()" class="mt-6 w-full rounded-xl bg-indigo-600 py-4 font-semibold text-white">Save Outfit</button>
+        </div>
+
+        <!-- Stats -->
+        <div id="page-stats" class="page hidden">
+          <h1 class="mb-6 text-2xl font-bold">Stats</h1>
+          
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="rounded-xl bg-white p-4 border border-gray-200">
+              <p class="text-3xl font-bold text-indigo-600" id="stat-total">0</p>
+              <p class="text-sm text-gray-500">Total Items</p>
+            </div>
+            <div class="rounded-xl bg-white p-4 border border-gray-200">
+              <p class="text-3xl font-bold text-indigo-600" id="stat-worn">0</p>
+              <p class="text-sm text-gray-500">Times Worn</p>
+            </div>
+            <div class="rounded-xl bg-white p-4 border border-gray-200">
+              <p class="text-3xl font-bold text-indigo-600" id="stat-value">£0</p>
+              <p class="text-sm text-gray-500">Wardrobe Value</p>
+            </div>
+            <div class="rounded-xl bg-white p-4 border border-gray-200">
+              <p class="text-3xl font-bold text-indigo-600" id="stat-favs">0</p>
+              <p class="text-sm text-gray-500">Favourites</p>
+            </div>
+          </div>
+
+          <div class="mb-6 rounded-xl bg-white p-4 border border-gray-200">
+            <h3 class="mb-3 font-semibold">By Category</h3>
+            <div id="category-stats" class="space-y-2"></div>
+          </div>
+
+          <div class="rounded-xl bg-white p-4 border border-gray-200">
+            <h3 class="mb-3 font-semibold">Most Worn</h3>
+            <div id="most-worn" class="space-y-2"></div>
+          </div>
+        </div>
+
+        <!-- History -->
+        <div id="page-history" class="page hidden">
+          <h1 class="mb-6 text-2xl font-bold">History</h1>
+          <div id="history-list" class="space-y-3"></div>
+          <div id="history-empty" class="hidden py-16 text-center text-gray-500">No history yet</div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-overlay" class="fixed inset-0 z-50 hidden bg-black/50" onclick="app.closeModal()">
+      <div class="flex h-full items-center justify-center p-4" onclick="event.stopPropagation()">
+        <div id="modal-content" class="w-full max-w-md rounded-2xl bg-white p-6"></div>
+      </div>
+    </div>
+
+    <!-- Item Detail Modal -->
+    <div id="item-detail-modal" class="fixed inset-0 z-50 hidden bg-black/50" onclick="app.closeItemModal()">
+      <div class="flex h-full items-center justify-center p-4" onclick="event.stopPropagation()">
+        <div id="item-detail-content" class="w-full max-w-lg rounded-2xl bg-white p-6 max-h-[90vh] overflow-y-auto"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const COLORS = [
+      { name: 'Black', hex: '#000000' }, { name: 'White', hex: '#FFFFFF' }, { name: 'Gray', hex: '#808080' },
+      { name: 'Navy', hex: '#000080' }, { name: 'Blue', hex: '#0000FF' }, { name: 'Light Blue', hex: '#ADD8E6' },
+      { name: 'Red', hex: '#FF0000' }, { name: 'Dark Red', hex: '#8B0000' }, { name: 'Pink', hex: '#FFC0CB' },
+      { name: 'Orange', hex: '#FFA500' }, { name: 'Yellow', hex: '#FFFF00' }, { name: 'Gold', hex: '#FFD700' },
+      { name: 'Green', hex: '#008000' }, { name: 'Light Green', hex: '#90EE90' }, { name: 'Olive', hex: '#808000' },
+      { name: 'Teal', hex: '#008080' }, { name: 'Purple', hex: '#800080' }, { name: 'Lavender', hex: '#E6E6FA' },
+      { name: 'Brown', hex: '#8B4513' }, { name: 'Tan', hex: '#D2B48C' }, { name: 'Beige', hex: '#F5F5DC' },
+      { name: 'Cream', hex: '#FFFDD0' }, { name: 'Burgundy', hex: '#800020' }, { name: 'Coral', hex: '#FF7F50' },
+      { name: 'Mint', hex: '#98FF98' }, { name: 'Sage', hex: '#9DC183' }, { name: 'Charcoal', hex: '#36454F' },
+      { name: 'Slate', hex: '#708090' }, { name: 'Ivory', hex: '#FFFFF0' }, { name: 'Khaki', hex: '#C3B091' },
+      { name: 'Maroon', hex: '#800000' }, { name: 'Turquoise', hex: '#40E0D0' }, { name: 'Cyan', hex: '#00FFFF' },
+      { name: 'Indigo', hex: '#4B0082' }, { name: 'Violet', hex: '#EE82EE' }, { name: 'Peach', hex: '#FFDAB9' },
+      { name: 'Lime', hex: '#00FF00' }, { name: 'Emerald', hex: '#50C878' }, { name: 'Plum', hex: '#DDA0DD' },
+      { name: 'Rust', hex: '#B7410E' }, { name: 'Mustard', hex: '#FFDB58' }, { name: 'Sky Blue', hex: '#87CEEB' },
+      { name: 'Forest Green', hex: '#228B22' }, { name: 'Denim', hex: '#1560BD' }, { name: 'Taupe', hex: '#483C32' },
+      { name: 'Copper', hex: '#B87333' }, { name: 'Silver', hex: '#C0C0C0' }, { name: 'Champagne', hex: '#F7E7CE' },
+      { name: 'Mauve', hex: '#E0B0FF' }
+    ];
+
+    const CATEGORIES = ['tops', 'jersey', 'shorts', 'bottoms', 'knitwear', 'jumper', 'outerwear', 'puffer', 'shoes', 'accessories', 'belts', 'trousers'];
+
+    class DripApp {
+      constructor() {
+        this.items = [];
+        this.history = [];
+        this.customCategories = [];
+        this.currentCategory = 'all';
+        this.selectedCategory = 'tops';
+        this.selectedColors = [];
+        this.selectedWarmth = 3;
+        this.selectedFormality = 2;
+        this.selectedSeasons = [];
+        this.selectedWeather = [];
+        this.photoData = null;
+        this.currentOutfit = [];
+        this.colorMode = 'complementary';
+        this.weather = null;
+        
+        this.loadData();
+        this.initColors();
+        this.init();
+      }
+
+      loadData() {
+        const savedItems = localStorage.getItem('drip-items');
+        const savedHistory = localStorage.getItem('drip-history');
+        const savedCategories = localStorage.getItem('drip-categories');
+        if (savedItems) this.items = JSON.parse(savedItems);
+        if (savedHistory) this.history = JSON.parse(savedHistory);
+        if (savedCategories) this.customCategories = JSON.parse(savedCategories);
+      }
+
+      saveItems() {
+        localStorage.setItem('drip-items', JSON.stringify(this.items));
+      }
+
+      saveHistory() {
+        localStorage.setItem('drip-history', JSON.stringify(this.history));
+      }
+
+      saveCategories() {
+        localStorage.setItem('drip-categories', JSON.stringify(this.customCategories));
+      }
+
+      init() {
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('login').classList.remove('hidden');
+        
+        const today = new Date();
+        document.getElementById('date-display').textContent = today.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
+        
+        this.fetchWeather();
+      }
+
+      async fetchWeather() {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(async (pos) => {
+            try {
+              const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&current_weather=true`);
+              const data = await res.json();
+              const temp = data.current_weather?.temperature;
+              const code = data.current_weather?.weathercode;
+              let weather = 'Clear';
+              if (code > 50) weather = 'Rainy';
+              if (code > 70) weather = 'Snowy';
+              if (temp < 10) weather = 'Cold';
+              if (temp > 25) weather = 'Hot';
+              this.weather = weather;
+              document.getElementById('weather-display').textContent = `${temp}°C • ${weather}`;
+              this.generateOutfit();
+            } catch (e) {
+              document.getElementById('weather-display').textContent = 'Weather unavailable';
+            }
+          }, () => {
+            document.getElementById('weather-display').textContent = 'Location denied';
+          });
+        }
+      }
+
+      initColors() {
+        const picker = document.getElementById('color-picker');
+        picker.innerHTML = COLORS.map(c => 
+          `<div class="color-swatch" style="background:${c.hex}" data-color="${c.hex}" data-name="${c.name}" onclick="app.toggleColor('${c.hex}', '${c.name}')" title="${c.name}"></div>`
+        ).join('');
+      }
+
+      signIn() {
+        document.getElementById('login').classList.add('hidden');
+        document.getElementById('main').classList.remove('hidden');
+        this.showPage('home');
+      }
+
+      signUp() {
+        this.signIn();
+      }
+
+      showPage(page) {
+        document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+        document.getElementById('page-' + page).classList.remove('hidden');
+        
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+          if (btn.dataset.page === page) {
+            btn.classList.add('text-indigo-600');
+            btn.classList.remove('text-gray-400');
+          } else {
+            btn.classList.remove('text-indigo-600');
+            btn.classList.add('text-gray-400');
+          }
+        });
+
+        if (page === 'wardrobe') this.renderWardrobe();
+        if (page === 'home') this.renderHome();
+        if (page === 'stats') this.renderStats();
+        if (page === 'history') this.renderHistory();
+        if (page === 'outfit') this.generateOutfit();
+      }
+
+      filterCategory(cat) {
+        this.currentCategory = cat;
+        document.querySelectorAll('.category-btn').forEach(btn => {
+          if (btn.dataset.cat === cat) {
+            btn.classList.add('bg-indigo-600', 'text-white');
+            btn.classList.remove('bg-gray-100', 'text-gray-600');
+          } else {
+            btn.classList.remove('bg-indigo-600', 'text-white');
+            btn.classList.add('bg-gray-100', 'text-gray-600');
+          }
+        });
+        this.renderWardrobe();
+      }
+
+      renderWardrobe() {
+        const grid = document.getElementById('wardrobe-grid');
+        const empty = document.getElementById('wardrobe-empty');
+        
+        let filtered = this.currentCategory === 'all' ? this.items : this.items.filter(i => i.category === this.currentCategory);
+        
+        if (filtered.length === 0) {
+          grid.classList.add('hidden');
+          empty.classList.remove('hidden');
+        } else {
+          grid.classList.remove('hidden');
+          empty.classList.add('hidden');
+          grid.innerHTML = filtered.map(item => `
+            <div class="group relative rounded-xl border border-gray-200 bg-white overflow-hidden cursor-pointer" onclick="app.showItemDetail(${item.id})">
+              <div class="aspect-square ${item.photo ? '' : 'bg-gray-100'}">
+                ${item.photo ? `<img src="${item.photo}" class="w-full h-full object-cover">` : ''}
+              </div>
+              <div class="p-3">
+                <p class="font-medium truncate">${item.name}</p>
+                <p class="text-sm text-gray-500">${item.category}</p>
+                <div class="mt-2 flex gap-1">${(item.colors || []).slice(0, 4).map(c => `<div class="w-4 h-4 rounded-full" style="background:${c.hex}"></div>`).join('')}</div>
+              </div>
+              <button onclick="event.stopPropagation(); app.deleteItem(${item.id})" class="absolute top-2 right-2 rounded-full bg-red-500 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+              </button>
+            </div>
+          `).join('');
+        }
+      }
+
+      showItemDetail(id) {
+        const item = this.items.find(i => i.id === id);
+        if (!item) return;
+        
+        const content = document.getElementById('item-detail-content');
+        content.innerHTML = `
+          <div class="flex justify-between items-start mb-4">
+            <h2 class="text-xl font-bold">${item.name}</h2>
+            <button onclick="app.closeItemModal()" class="text-gray-500">✕</button>
+          </div>
+          ${item.photo ? `<img src="${item.photo}" class="w-full max-h-64 object-contain rounded-xl mb-4">` : ''}
+          
+          <div class="space-y-3">
+            <div class="flex justify-between">
+              <span class="text-gray-500">Category</span>
+              <span class="font-medium">${item.category}</span>
+            </div>
+            ${item.brand ? `<div class="flex justify-between"><span class="text-gray-500">Brand</span><span class="font-medium">${item.brand}</span></div>` : ''}
+            ${item.price ? `<div class="flex justify-between"><span class="text-gray-500">Price</span><span class="font-medium">£${item.price}</span></div>` : ''}
+            <div class="flex justify-between"><span class="text-gray-500">Warmth</span><span class="font-medium">${item.warmth}/5</span></div>
+            <div class="flex justify-between"><span class="text-gray-500">Formality</span><span class="font-medium">${item.formality}/5</span></div>
+            <div class="flex justify-between"><span class="text-gray-500">Times Worn</span><span class="font-medium">${item.timesWorn || 0}</span></div>
+            ${item.colors?.length ? `<div class="flex justify-between"><span class="text-gray-500">Colors</span><div class="flex gap-1">${item.colors.map(c => `<div class="w-5 h-5 rounded-full" style="background:${c.hex}" title="${c.name}"></div>`).join('')}</div></div>` : ''}
+            ${item.seasons?.length ? `<div class="flex justify-between"><span class="text-gray-500">Seasons</span><span class="font-medium">${item.seasons.join(', ')}</span></div>` : ''}
+            ${item.link ? `<div class="flex justify-between"><span class="text-gray-500">Link</span><a href="${item.link}" target="_blank" class="text-indigo-600 text-sm">View</a></div>` : ''}
+          </div>
+          
+          <div class="mt-6 flex gap-2">
+            <button onclick="app.editItem(${item.id})" class="flex-1 rounded-xl bg-gray-100 py-3 font-medium">Edit</button>
+            <button onclick="app.deleteItem(${item.id}); app.closeItemModal()" class="flex-1 rounded-xl bg-red-500 py-3 font-medium text-white">Delete</button>
+          </div>
+        `;
+        document.getElementById('item-detail-modal').classList.remove('hidden');
+      }
+
+      closeItemModal() {
+        document.getElementById('item-detail-modal').classList.add('hidden');
+      }
+
+      editItem(id) {
+        const item = this.items.find(i => i.id === id);
+        if (!item) return;
+        
+        this.closeItemModal();
+        
+        document.getElementById('item-name').value = item.name || '';
+        document.getElementById('item-brand').value = item.brand || '';
+        document.getElementById('item-price').value = item.price || '';
+        this.selectedCategory = item.category || 'tops';
+        this.selectedWarmth = item.warmth || 3;
+        this.selectedFormality = item.formality || 2;
+        this.selectedSeasons = item.seasons || [];
+        this.selectedColors = item.colors || [];
+        this.photoData = item.photo || null;
+        
+        this.setCategory(this.selectedCategory);
+        this.setWarmth(this.selectedWarmth);
+        this.setFormality(this.selectedFormality);
+        this.renderSelectedColors();
+        
+        if (this.photoData) {
+          document.getElementById('photo-preview').classList.remove('hidden');
+          document.getElementById('preview-img').src = this.photoData;
+        }
+        
+        this.items = this.items.filter(i => i.id !== id);
+        this.showPage('add');
+      }
+
+      deleteItem(id) {
+        if (confirm('Delete this item?')) {
+          this.items = this.items.filter(i => i.id !== id);
+          this.saveItems();
+          this.renderWardrobe();
+        }
+      }
+
+      handlePhotoFile(input) {
+        const file = input.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            this.photoData = e.target.result;
+            document.getElementById('photo-preview').classList.remove('hidden');
+            document.getElementById('preview-img').src = this.photoData;
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+
+      showImageUrlModal() {
+        document.getElementById('modal-content').innerHTML = `
+          <h3 class="text-lg font-bold mb-4">Add Image from URL</h3>
+          <input type="text" id="image-url-input" placeholder="https://example.com/image.jpg" class="w-full rounded-xl border border-gray-300 px-4 py-3 mb-4">
+          <button onclick="app.loadImageFromUrl()" class="w-full rounded-xl bg-indigo-600 py-3 font-semibold text-white">Load Image</button>
+        `;
+        document.getElementById('modal-overlay').classList.remove('hidden');
+      }
+
+      loadImageFromUrl() {
+        const url = document.getElementById('image-url-input').value;
+        if (url) {
+          this.photoData = url;
+          document.getElementById('photo-preview').classList.remove('hidden');
+          document.getElementById('preview-img').src = url;
+          this.closeModal();
+        }
+      }
+
+      clearPhoto() {
+        this.photoData = null;
+        document.getElementById('photo-preview').classList.add('hidden');
+        document.getElementById('photo-file').value = '';
+      }
+
+      showCategoryModal() {
+        document.getElementById('modal-content').innerHTML = `
+          <h3 class="text-lg font-bold mb-4">Add Custom Category</h3>
+          <input type="text" id="custom-category-input" placeholder="e.g. Loungewear" class="w-full rounded-xl border border-gray-300 px-4 py-3 mb-4">
+          <button onclick="app.addCustomCategory()" class="w-full rounded-xl bg-indigo-600 py-3 font-semibold text-white">Add Category</button>
+          ${this.customCategories.length ? `<div class="mt-4"><p class="text-sm text-gray-500 mb-2">Your categories:</p>${this.customCategories.map(c => `<span class="inline-block rounded-full bg-gray-100 px-3 py-1 text-sm mr-2 mb-2">${c}</span>`).join('')}</div>` : ''}
+        `;
+        document.getElementById('modal-overlay').classList.remove('hidden');
+      }
+
+      addCustomCategory() {
+        const input = document.getElementById('custom-category-input');
+        const cat = input.value.trim().toLowerCase();
+        if (cat && !this.customCategories.includes(cat)) {
+          this.customCategories.push(cat);
+          this.saveCategories();
+          this.showCategoryModal();
+        }
+      }
+
+      closeModal() {
+        document.getElementById('modal-overlay').classList.add('hidden');
+      }
+
+      setCategory(cat) {
+        this.selectedCategory = cat;
+        document.querySelectorAll('.cat-btn').forEach(btn => {
+          if (btn.dataset.cat === cat) {
+            btn.classList.add('bg-indigo-600', 'text-white');
+            btn.classList.remove('bg-gray-100', 'text-gray-600');
+          } else {
+            btn.classList.remove('bg-indigo-600', 'text-white');
+            btn.classList.add('bg-gray-100', 'text-gray-600');
+          }
+        });
+      }
+
+      toggleColor(hex, name) {
+        const exists = this.selectedColors.find(c => c.hex === hex);
+        if (exists) {
+          this.selectedColors = this.selectedColors.filter(c => c.hex !== hex);
+        } else if (this.selectedColors.length < 5) {
+          this.selectedColors.push({ hex, name });
+        }
+        this.renderSelectedColors();
+      }
+
+      renderSelectedColors() {
+        const container = document.getElementById('selected-colors');
+        container.innerHTML = this.selectedColors.map(c => 
+          `<span class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs">
+            <div class="w-3 h-3 rounded-full" style="background:${c.hex}"></div>${c.name}
+            <button onclick="app.toggleColor('${c.hex}', '${c.name}')" class="ml-1 text-gray-500">×</button>
+          </span>`
+        ).join('');
+      }
+
+      setWarmth(level) {
+        this.selectedWarmth = level;
+        document.querySelectorAll('.warmth-btn').forEach(btn => {
+          if (parseInt(btn.dataset.level) <= level) {
+            btn.classList.add('bg-indigo-600');
+            btn.classList.remove('bg-gray-200');
+          } else {
+            btn.classList.remove('bg-indigo-600');
+            btn.classList.add('bg-gray-200');
+          }
+        });
+      }
+
+      setFormality(level) {
+        this.selectedFormality = level;
+        document.querySelectorAll('.formality-btn').forEach(btn => {
+          if (parseInt(btn.dataset.level) <= level) {
+            btn.classList.add('bg-indigo-600');
+            btn.classList.remove('bg-gray-200');
+          } else {
+            btn.classList.remove('bg-indigo-600');
+            btn.classList.add('bg-gray-200');
+          }
+        });
+      }
+
+      toggleSeason(season) {
+        if (this.selectedSeasons.includes(season)) {
+          this.selectedSeasons = this.selectedSeasons.filter(s => s !== season);
+        } else {
+          this.selectedSeasons.push(season);
+        }
+        document.querySelectorAll('.season-btn').forEach(btn => {
+          if (this.selectedSeasons.includes(btn.dataset.season)) {
+            btn.classList.add('bg-indigo-600', 'text-white');
+            btn.classList.remove('bg-gray-100');
+          } else {
+            btn.classList.remove('bg-indigo-600', 'text-white');
+            btn.classList.add('bg-gray-100');
+          }
+        });
+      }
+
+      toggleWeather(weather) {
+        if (this.selectedWeather.includes(weather)) {
+          this.selectedWeather = this.selectedWeather.filter(w => w !== weather);
+        } else {
+          this.selectedWeather.push(weather);
+        }
+        document.querySelectorAll('.weather-btn').forEach(btn => {
+          if (this.selectedWeather.includes(btn.dataset.weather)) {
+            btn.classList.add('bg-indigo-600', 'text-white');
+            btn.classList.remove('bg-gray-100');
+          } else {
+            btn.classList.remove('bg-indigo-600', 'text-white');
+            btn.classList.add('bg-gray-100');
+          }
+        });
+      }
+
+      saveItem() {
+        const name = document.getElementById('item-name').value.trim();
+        if (!name) {
+          alert('Please enter a name');
+          return;
+        }
+
+        const item = {
+          id: Date.now(),
+          name,
+          category: this.selectedCategory,
+          brand: document.getElementById('item-brand').value || null,
+          price: document.getElementById('item-price').value || null,
+          warmth: this.selectedWarmth,
+          formality: this.selectedFormality,
+          seasons: this.selectedSeasons,
+          weather: this.selectedWeather,
+          colors: this.selectedColors,
+          photo: this.photoData,
+          link: document.getElementById('purchase-link').value || null,
+          timesWorn: 0,
+          lastWorn: null,
+          createdAt: new Date().toISOString()
+        };
+
+        this.items.push(item);
+        this.saveItems();
+
+        this.resetForm();
+        this.showPage('wardrobe');
+      }
+
+      resetForm() {
+        document.getElementById('item-name').value = '';
+        document.getElementById('item-brand').value = '';
+        document.getElementById('item-price').value = '';
+        document.getElementById('purchase-link').value = '';
+        this.selectedColors = [];
+        this.selectedSeasons = [];
+        this.selectedWeather = [];
+        this.photoData = null;
+        this.selectedWarmth = 3;
+        this.selectedFormality = 2;
+        this.setCategory('tops');
+        this.setWarmth(3);
+        this.setFormality(2);
+        this.renderSelectedColors();
+        this.clearPhoto();
+      }
+
+      getColorHarmony(colors, mode) {
+        if (!colors.length) return [];
+        
+        const baseColor = colors[0].hex;
+        
+        if (mode === 'complementary') {
+          return colors;
+        } else if (mode === 'analogous') {
+          return colors.slice(0, 3);
+        } else if (mode === 'triadic') {
+          return colors.slice(0, 3);
+        }
+        return colors;
+      }
+
+      generateOutfit() {
+        const weatherSelect = document.getElementById('weather-select').value;
+        const weather = weatherSelect || this.weather || 'any';
+        
+        const isCold = ['cold', 'snowy', 'winter'].includes(weather?.toLowerCase()) || (this.weather && this.weather.toLowerCase().includes('cold'));
+        
+        let available = [...this.items];
+        
+        if (weather !== 'any') {
+          available = available.filter(item => 
+            !item.weather || item.weather.includes(weather) || 
+            (weather === 'cold' && item.warmth >= 4) ||
+            (weather === 'hot' && item.warmth <= 2)
+          );
+        }
+
+        // Build outfit structure
+        const outfit = [];
+        
+        // Bottoms (shorts or trousers)
+        const bottoms = available.filter(i => ['bottoms', 'shorts'].includes(i.category));
+        if (bottoms.length) {
+          outfit.push(bottoms[Math.floor(Math.random() * bottoms.length)]);
+        }
+        
+        // Tops (t-shirts, jerseys)
+        const tops = available.filter(i => ['tops', 'jersey'].includes(i.category));
+        if (tops.length) {
+          outfit.push(tops[Math.floor(Math.random() * tops.length)]);
+        }
+        
+        // Jumper/Knitwear (if cold)
+        if (isCold) {
+          const knitwear = available.filter(i => ['knitwear', 'jumper'].includes(i.category));
+          if (knitwear.length) {
+            outfit.push(knitwear[Math.floor(Math.random() * knitwear.length)]);
+          }
+          
+          // Puffer (if very cold)
+          const puffers = available.filter(i => i.category === 'puffer');
+          if (puffers.length) {
+            outfit.push(puffers[Math.floor(Math.random() * puffers.length)]);
+          }
+        }
+        
+        // Outerwear (if not too warm)
+        if (!['hot', 'summer'].includes(weather?.toLowerCase())) {
+          const outerwear = available.filter(i => i.category === 'outerwear');
+          if (outerwear.length && !outfit.find(i => i.category === 'puffer')) {
+            outfit.push(outerwear[Math.floor(Math.random() * outerwear.length)]);
+          }
+        }
+        
+        // Shoes
+        const shoes = available.filter(i => i.category === 'shoes');
+        if (shoes.length) {
+          outfit.push(shoes[Math.floor(Math.random() * shoes.length)]);
+        }
+        
+        // Accessories
+        const accessories = available.filter(i => i.category === 'accessories');
+        if (accessories.length && Math.random() > 0.5) {
+          outfit.push(accessories[Math.floor(Math.random() * accessories.length)]);
+        }
+
+        this.currentOutfit = outfit;
+        
+        const display = document.getElementById('outfit-display');
+        const builder = document.getElementById('outfit-builder');
+        
+        if (outfit.length === 0) {
+          display.innerHTML = '<p class="col-span-full text-center text-gray-500 py-8">Add more clothes for outfit suggestions!</p>';
+          builder.innerHTML = '<p class="text-center text-gray-500 py-8">Add more clothes first!</p>';
+          return;
+        }
+
+        const html = outfit.map(item => `
+          <div class="rounded-xl border border-gray-200 bg-gray-50 p-3">
+            <div class="aspect-square ${item.photo ? '' : 'bg-gray-200'} rounded-lg mb-2">
+              ${item.photo ? `<img src="${item.photo}" class="w-full h-full object-cover rounded-lg">` : ''}
+            </div>
+            <p class="text-sm font-medium truncate">${item.name}</p>
+            <p class="text-xs text-gray-500">${item.category}</p>
+          </div>
+        `).join('');
+        
+        display.innerHTML = html;
+        
+        builder.innerHTML = `
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            ${this.items.slice(0, 8).map(item => `
+              <div class="rounded-xl border border-gray-200 bg-white p-2 cursor-pointer ${this.currentOutfit.find(o => o.id === item.id) ? 'border-indigo-500 ring-2 ring-indigo-200' : ''}" onclick="app.toggleOutfitItem(${item.id})">
+                <div class="aspect-square ${item.photo ? '' : 'bg-gray-100'} rounded-lg mb-2">
+                  ${item.photo ? `<img src="${item.photo}" class="w-full h-full object-cover rounded-lg">` : ''}
+                </div>
+                <p class="text-xs font-medium truncate">${item.name}</p>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      toggleOutfitItem(id) {
+        const item = this.items.find(i => i.id === id);
+        if (!item) return;
+        
+        const idx = this.currentOutfit.findIndex(o => o.id === id);
+        if (idx >= 0) {
+          this.currentOutfit.splice(idx, 1);
+        } else {
+          this.currentOutfit.push(item);
+        }
+        this.generateOutfit();
+      }
+
+      setColorMode(mode) {
+        this.colorMode = mode;
+        document.querySelectorAll('.color-mode-btn').forEach(btn => {
+          if (btn.dataset.mode === mode) {
+            btn.classList.add('bg-indigo-600', 'text-white');
+            btn.classList.remove('bg-gray-100', 'text-gray-600');
+          } else {
+            btn.classList.remove('bg-indigo-600', 'text-white');
+            btn.classList.add('bg-gray-100', 'text-gray-600');
+          }
+        });
+        this.generateOutfit();
+      }
+
+      wearOutfit() {
+        if (!this.currentOutfit.length) {
+          alert('No outfit to wear!');
+          return;
+        }
+
+        this.currentOutfit.forEach(item => {
+          const idx = this.items.findIndex(i => i.id === item.id);
+          if (idx >= 0) {
+            this.items[idx].timesWorn = (this.items[idx].timesWorn || 0) + 1;
+            this.items[idx].lastWorn = new Date().toISOString();
+          }
+        });
+
+        this.history.unshift({
+          id: Date.now(),
+          date: new Date().toISOString(),
+          items: this.currentOutfit.map(i => i.id)
+        });
+
+        this.saveItems();
+        this.saveHistory();
+        
+        alert('Outfit logged! Great choice!');
+        this.renderHome();
+      }
+
+      saveOutfit() {
+        if (!this.currentOutfit.length) {
+          alert('No outfit to save!');
+          return;
+        }
+
+        this.history.unshift({
+          id: Date.now(),
+          date: new Date().toISOString(),
+          items: this.currentOutfit.map(i => i.id),
+          saved: true
+        });
+
+        this.saveHistory();
+        alert('Outfit saved!');
+      }
+
+      renderHome() {
+        if (this.items.length === 0) {
+          document.getElementById('outfit-display').innerHTML = '<p class="col-span-full text-center text-gray-500 py-8">Your wardrobe is empty!</p>';
+          document.getElementById('empty-wardrobe')?.classList.remove('hidden');
+        } else {
+          this.generateOutfit();
+        }
+
+        const activity = document.getElementById('recent-activity');
+        if (this.history.length === 0) {
+          activity.innerHTML = '<p class="text-sm text-gray-500">No recent activity</p>';
+        } else {
+          activity.innerHTML = this.history.slice(0, 3).map(h => {
+            const date = new Date(h.date).toLocaleDateString();
+            return `<div class="rounded-lg bg-white p-3 border border-gray-100"><p class="text-sm font-medium">${date}</p><p class="text-xs text-gray-500">${h.items.length} items ${h.saved ? '✓ saved' : ''}</p></div>`;
+          }).join('');
+        }
+      }
+
+      renderStats() {
+        document.getElementById('stat-total').textContent = this.items.length;
+        document.getElementById('stat-worn').textContent = this.items.reduce((sum, i) => sum + (i.timesWorn || 0), 0);
+        document.getElementById('stat-value').textContent = '£' + this.items.reduce((sum, i) => sum + (parseInt(i.price) || 0), 0);
+        document.getElementById('stat-favs').textContent = this.history.filter(h => h.saved).length;
+
+        const catStats = document.getElementById('category-stats');
+        const cats = {};
+        this.items.forEach(i => { cats[i.category] = (cats[i.category] || 0) + 1; });
+        catStats.innerHTML = Object.entries(cats).map(([cat, count]) => 
+          `<div class="flex justify-between items-center"><span class="capitalize">${cat}</span><span class="font-medium">${count}</span></div>`
+        ).join('');
+
+        const mostWorn = document.getElementById('most-worn');
+        const sorted = [...this.items].sort((a, b) => (b.timesWorn || 0) - (a.timesWorn || 0)).slice(0, 5);
+        mostWorn.innerHTML = sorted.map((i, idx) => 
+          `<div class="flex justify-between items-center"><span>${idx + 1}. ${i.name}</span><span class="text-gray-500">${i.timesWorn || 0}x</span></div>`
+        ).join('');
+      }
+
+      renderHistory() {
+        const list = document.getElementById('history-list');
+        const empty = document.getElementById('history-empty');
+        
+        if (this.history.length === 0) {
+          list.classList.add('hidden');
+          empty.classList.remove('hidden');
+        } else {
+          list.classList.remove('hidden');
+          empty.classList.add('hidden');
+          list.innerHTML = this.history.map(h => {
+            const date = new Date(h.date).toLocaleDateString();
+            const itemNames = h.items.map(id => {
+              const item = this.items.find(i => i.id === id);
+              return item ? item.name : 'Unknown';
+            }).join(', ');
+            return `
+              <div class="rounded-xl border border-gray-200 bg-white p-4">
+                <div class="flex justify-between mb-2">
+                  <p class="font-medium">${date}</p>
+                  ${h.saved ? '<span class="text-xs bg-indigo-100 text-indigo-600 px-2 py-1 rounded-full">Saved</span>' : ''}
+                </div>
+                <p class="text-sm text-gray-500">${itemNames}</p>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+    }
+
+    const app = new DripApp();
+  </script>
+</body>
+</html>

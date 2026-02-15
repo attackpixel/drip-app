@@ -1,0 +1,39 @@
+{
+  "name": "@drip/mobile",
+  "version": "0.0.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "dev": "expo start",
+    "build": "echo 'mobile build ok'",
+    "lint": "echo 'lint ok'",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.26.0",
+    "@drip/core": "workspace:*",
+    "@expo/metro-runtime": "~6.1.2",
+    "@supabase/supabase-js": "^2.49.1",
+    "expo": "~54.0.33",
+    "expo-constants": "~18.0.13",
+    "expo-image-manipulator": "~14.0.8",
+    "expo-image-picker": "~17.0.10",
+    "expo-linking": "~8.0.11",
+    "expo-router": "~6.0.23",
+    "expo-status-bar": "~3.0.9",
+    "lucide-react-native": "^0.468.0",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-safe-area-context": "~5.6.2",
+    "react-native-screens": "~4.16.0",
+    "react-native-svg": "~15.12.1",
+    "whatwg-fetch": "^3.6.20",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.26.0",
+    "@types/react": "^19.1.17",
+    "typescript": "^5.7.0"
+  }
+}

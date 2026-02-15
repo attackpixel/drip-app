@@ -1,0 +1,12 @@
+* text=auto
+
+# Keep binary files as-is
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.icns binary
+*.pdf binary
+*.apk binary
+*.aab binary

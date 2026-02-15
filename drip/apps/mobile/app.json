@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "Drip",
+    "slug": "drip",
+    "version": "1.0.0",
+    "scheme": "drip",
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "splash": {
+      "backgroundColor": "#6366f1"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "android": {
+      "package": "com.anonymous.drip"
+    }
+  }
+}

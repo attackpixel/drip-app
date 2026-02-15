@@ -1,0 +1,10 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@drip/core": ["../../packages/core/src"],
+      "@drip/core/*": ["../../packages/core/src/*"]
+    }
+  }
+}
