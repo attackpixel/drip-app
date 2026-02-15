@@ -43,7 +43,10 @@ jobs:
 
       - name: Install dependencies
         working-directory: drip
-        run: pnpm install --frozen-lockfile
+        run: npm install -g pnpm && pnpm install --frozen-lockfile
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
 
       - name: Build @drip/core
         working-directory: drip/packages/core
