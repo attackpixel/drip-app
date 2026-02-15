@@ -16,6 +16,12 @@
     ],
     "android": {
       "package": "com.anonymous.drip"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ad3135fb-fcb6-4fcf-baf9-222b65b8652a"
+      }
     }
   }
 }
