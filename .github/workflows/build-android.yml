@@ -1,0 +1,74 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('drip/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Install dependencies
+        working-directory: drip
+        run: pnpm install --frozen-lockfile
+
+      - name: Build @drip/core
+        working-directory: drip/packages/core
+        run: pnpm build
+
+      - name: Build Android with EAS
+        working-directory: drip/apps/mobile
+        env:
+          EXPO_NO_TELEMETRY: 1
+          EAS_BUILD_CONTEXT: GITHUB
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: npx eas build -p android --profile production --non-interactive
+
+      - name: Download built APK
+        working-directory: drip/apps/mobile
+        env:
+          EXPO_NO_TELEMETRY: 1
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          BUILD_ID=$(npx eas build:list --platform android --status finished --limit 1 --json | jq -r '.[0].id')
+          npx eas build:download "$BUILD_ID"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: drip/apps/mobile/*.apk
+          if-no-files-found: ignore
